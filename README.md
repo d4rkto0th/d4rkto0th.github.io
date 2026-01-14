@@ -50,3 +50,4 @@ title: Your Lab Title
 - Edit `_config.yml` for site title/description
 - Edit `_layouts/default.html` for styling
 - Update `baseurl` in `_config.yml` if using a project site (e.g., `/labs`)
+
