@@ -1,0 +1,14 @@
+title: Security Labs
+description: CTF and security lab write-ups
+baseurl: "" # update if using project site (e.g., /labs)
+url: "" # your github.io URL
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Exclude from build
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
