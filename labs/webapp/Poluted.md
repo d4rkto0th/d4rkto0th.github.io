@@ -1,3 +1,8 @@
+---
+layout: default
+title: HackSmarter - Poluted Lab Writeup
+---
+
 # Poluted (Prototype Pollution - XSS) (Hacksmarter)
 
 # HackSmarter - Poluted Lab Writeup
