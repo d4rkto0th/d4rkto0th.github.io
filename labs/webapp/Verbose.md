@@ -168,7 +168,7 @@ Attempted admin login but account protected by MFA (4-digit code).
 
 **Burp Intruder Configuration:**
 
-```
+```http
 POST /mfa HTTP/1.1
 Host: 10.1.148.204
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
