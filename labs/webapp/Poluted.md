@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Poluted - Prototype Pollution to XSS"
+title: "Poluted (Prototype Pollution to XSS) - Hacksmarter"
 ---
 
 [← Back](./)
