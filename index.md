@@ -13,7 +13,6 @@ Write-ups for CTF challenges and security labs.
 <!-- 
 - [Cloud](/labs/cloud/)
 - [On-Prem](/labs/onprem/)
-**/
 --->
 
 {% for page in site.pages %}
