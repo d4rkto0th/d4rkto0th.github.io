@@ -41,7 +41,7 @@ You have been authorized to perform an external penetration test against a targe
 
 ```bash
 # Target Application
-URL: http://[target]:5000 (Flask application)
+URL: http://10.1.148.204:80 (Flask application)
 
 # Initial Action
 Created a standard user account via registration
