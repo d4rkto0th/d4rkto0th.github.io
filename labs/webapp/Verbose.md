@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Verbose - SSTI"
+title: "Verbose (SSTI) - Hacksmarter"
 ---
 [← Back](./)
 
