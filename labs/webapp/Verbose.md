@@ -275,6 +275,7 @@ cat /root/root.txt
 HSM{a3fec2e83dad}
 ```
 
+
 > **⚠️ Note:** Server was running as root - no privilege escalation required. This is a critical misconfiguration.
 
 ---
