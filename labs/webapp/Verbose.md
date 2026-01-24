@@ -1,3 +1,9 @@
+---
+layout: default
+title: "Verbose - SSTI"
+---
+[← Back](./)
+
 # Verbose (SSTI) - HackSmarter
 
 ## Overview
