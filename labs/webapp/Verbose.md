@@ -31,7 +31,11 @@ title: "Verbose (SSTI to RCE) - Hacksmarter"
 
 ## Objective
 
-Gain access to the root flag located at `/root/root.txt`.
+You have been authorized to perform an external penetration test against a target organization. During the initial reconnaissance phase, you identified a web application that allows unrestricted public user registration.
+
+    Enumerate: Map the application's attack surface and functionality.
+    Identify: Locate exploitable vulnerabilities within the application logic or configuration.
+    Exploit & Escalate: Leverage identified flaws to compromise the system, with the final goal of securing root access to the host server to demonstrate maximum impact.
 
 ## Initial Access
 
