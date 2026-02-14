@@ -258,15 +258,10 @@ Dev Console access revealed the flag.
 - **Lesson**: Hidden functionality often has weaker security than public-facing features
 
 ### SQLite Concatenation Injection
-
-| Technique | Use Case | Syntax |
-|-----------|----------|--------|
-| `&#124;&#124;` concatenation | Inline data exfiltration | `value'&#124;&#124;(SELECT data FROM table)&#124;&#124;'` |
-| `LIMIT/OFFSET` | Enumerate rows | `LIMIT 1 OFFSET n` |
-
 - SQLite `||` operator enables inline data exfiltration without UNION
 - Payload pattern: `value'||(SELECT data FROM table)||'`
 - Data appears embedded in the response field, no need for error-based or blind techniques
+- Use `LIMIT 1 OFFSET n` to enumerate rows one at a time
 
 ### Database Backup as Attack Vector
 - Backup features that download full database files are extremely high-value targets
