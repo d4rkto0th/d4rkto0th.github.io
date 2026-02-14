@@ -233,6 +233,8 @@ Grabbed the fresh OTP and submitted to `/dev/verify` within the 60-second window
 
 Dev Console access revealed the flag.
 
+![Dev Panel](images/dev_panel.png)
+
 ---
 
 ## Flag / Objective Achieved
