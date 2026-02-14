@@ -261,7 +261,7 @@ Dev Console access revealed the flag.
 
 | Technique | Use Case | Syntax |
 |-----------|----------|--------|
-| `\|\|` concatenation | Inline data exfiltration | `value'\|\|(SELECT data FROM table)\|\|'` |
+| `&#124;&#124;` concatenation | Inline data exfiltration | `value'&#124;&#124;(SELECT data FROM table)&#124;&#124;'` |
 | `LIMIT/OFFSET` | Enumerate rows | `LIMIT 1 OFFSET n` |
 
 - SQLite `||` operator enables inline data exfiltration without UNION
