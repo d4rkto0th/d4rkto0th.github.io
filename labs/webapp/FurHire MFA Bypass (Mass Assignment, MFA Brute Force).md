@@ -349,7 +349,6 @@ Same approach but understanding PIN rotation — just one thread cycling JWTs
 **Authentication & MFA Resources:**
 - [CWE-307: Improper Restriction of Excessive Authentication Attempts](https://cwe.mitre.org/data/definitions/307.html)
 - [CWE-308: Use of Single-factor Authentication](https://cwe.mitre.org/data/definitions/308.html)
-- [OWASP Testing Guide - Testing for Brute Force](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/04-Authentication_Testing/04-Testing_for_Brute_Force)
 
 ---
 
