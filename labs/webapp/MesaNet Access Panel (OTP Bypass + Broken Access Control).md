@@ -109,8 +109,8 @@ Auth: Session-based (connect.sid cookie, HttpOnly, 24h expiry)
 ## Attack Chain Visualization
 ```
 ┌──────────────────────┐
-│  Login as operator    │
-│  (operator:operator)  │
+│  Login as operator   │
+│  (operator:operator) │
 └──────────┬───────────┘
            │
            ▼
